@@ -1,0 +1,19 @@
+{
+    "name": "heleonprime/birdseye",
+    "description": "Test call request  package",
+    "license": "GNU",
+    "authors": [
+        {
+            "name": "Eugene Bondar",
+            "email": "heleonprime@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Heleonprime\\Birdseye\\": "src"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "~5.0"
+    }
+}
