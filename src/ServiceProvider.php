@@ -8,7 +8,7 @@ class ServiceProvider extends LServiceProvider {
     {
 
         //Указываем что пакет должен опубликовать при установке
-        $this->publishes([__DIR__ . '/../config/' => config_path() . "/"], 'config');
+        $this->publishes([__DIR__ . '/../config/birdseye.php' => config_path('birdseye.php')], 'config');
         //$this->publishes([__DIR__ . '/../public/' => public_path() . "/vendor/call-request/"], 'assets');
         //$this->publishes([__DIR__ . '/../database/' => base_path("database")], 'database');
 
