@@ -22,12 +22,13 @@ class Birdseye extends Model
         {
             return false;
         }
-        $reqUrl = config('birdseye.url') . $longitude . ',' . $latitude ;
+        $reqUrl = config('birdseye.url') . $latitude . ',' . $longitude ;
         try {
             $this->data = json_decode((new HttpClient)->get($reqUrl, [
                 'query' => [ 'o' => 'json', 'key' => config('birdseye.api_key') ],
                 'headers'=> [ 'Content-Type' => 'undefined' ],
             ])->getBody()->getContents(), true);
+            //dd($this->getMeta());
             if($this->getMeta())
             {
                 $this->setAttributes();
@@ -49,13 +50,15 @@ class Birdseye extends Model
             $ImagesUrl = $this->getUrlFromMeta();
             $manager = new ImageManager(array('driver' => 'imagick'));
             $client = new HttpClient;
-            $canvas = $manager->canvas($this->meta['tilesX'] * $this->meta['imageWidth'], $this->meta['tilesY'] * $this->meta['imageHeight']);
             $requests = [];
             $params = [];
             $left = 0;
             $top = 0;
-            for($i = 0; $i < $this->meta['count']; $i++){
-            if ($i % $this->meta['tilesX'] === 0 && $i !== 0) {
+            
+            $zoomK = 1; //($this->meta['zoomMin'] === 19) ? 2 : 1;
+            for($i = 0; $i < $this->meta['count']; $i++)
+            {
+                if ($i % ($this->meta['tilesX'] / $zoomK) === 0 && $i !== 0) {
                     $top ++;
                     $left = 0;
                 }
@@ -70,10 +73,23 @@ class Birdseye extends Model
                         $url = $event->getRequest()->getUrl();
                         $data = $event->getResponse()->getBody()->getContents();
                         $image = $manager->make($data);
-                        $canvas->insert($image, 'top-left', $params[$url]['left'] * $image->width(), $params[$url]['top'] * $image->height());
+                        $params[$url]['image'] = $image;
                     }
             ]);
             $pool->wait();
+            
+            $isFirst = true;
+            
+            foreach($params as $paramArr)
+            {
+                if($isFirst)
+                {
+                    $canvas = $manager->canvas($this->meta['tilesX'] * $paramArr['image']->width() / $zoomK, $this->meta['tilesY'] * $paramArr['image']->height() / $zoomK);
+                    $isFirst = false;
+                }
+                $canvas->insert($paramArr['image'], 'top-left', $paramArr['left'] * $paramArr['image']->width(), $paramArr['top'] * $paramArr['image']->height());
+            }
+            $canvas = $canvas->crop($canvas->width()/2,$canvas->height()/2, $canvas->width()/4, $canvas->height()/4);
             $this->image = $canvas;
             return $canvas;
         }
@@ -102,7 +118,7 @@ class Birdseye extends Model
             [
                 "https", 
                 "t0", 
-                "20"
+                20 // $this->meta['zoomMin']
             ], $this->meta['imageUrl']);
     }
             
