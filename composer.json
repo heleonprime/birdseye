@@ -15,6 +15,7 @@
     },
     "require": {
         "guzzlehttp/guzzle": "~5.0",
+        "guzzlehttp/retry-subscriber": "~2.0",
         "intervention/image": "^2.3"
     }
 }
