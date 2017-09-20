@@ -8,6 +8,7 @@ use GuzzleHttp\Client as HttpClient;
 use Intervention\Image\ImageManager;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Event\CompleteEvent;
+use GuzzleHttp\Subscriber\Retry\RetrySubscriber;
 
 class Birdseye extends Model
 {
@@ -67,9 +68,14 @@ class Birdseye extends Model
                 $params[$ImgSrcNow] = [ 'top' => $top, 'left' => $left ];
                 $left++;
             }
+            $haveError = false;
             $pool = new Pool($client, $requests, [
-                'complete' => function (CompleteEvent $event) use (&$params, &$canvas, $manager) 
+                'complete' => function (CompleteEvent $event) use (&$params, &$haveError, $manager) 
                     {
+                        if($event->getResponse()->getStatusCode() !== 200)
+                        {
+                            $haveError = true;
+                        }
                         $url = $event->getRequest()->getUrl();
                         $data = $event->getResponse()->getBody()->getContents();
                         $image = $manager->make($data);
@@ -77,7 +83,10 @@ class Birdseye extends Model
                     }
             ]);
             $pool->wait();
-            
+            if($haveError)
+            {
+                return false;
+            }
             $isFirst = true;
             
             foreach($params as $paramArr)
@@ -101,6 +110,11 @@ class Birdseye extends Model
         return $this->image->resize($width, null, function ($constraint) {
             $constraint->aspectRatio();
         });
+    }
+    
+    public function encode()
+    {
+        return (string) $this->image->encode('data-url');
     }
     
     public function response()
